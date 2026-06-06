@@ -152,6 +152,16 @@
       text-overflow: ellipsis;
     }
 
+    .album {
+      font-size: 0.6rem;
+      color: var(--muted);
+      opacity: 0.6;
+      font-style: italic;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     footer {
       text-align: center;
       padding: 3rem 2rem;
