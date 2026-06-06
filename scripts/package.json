@@ -1,0 +1,9 @@
+{
+  "name": "radar-scraper",
+  "version": "1.0.0",
+  "description": "Spotify Release Radar scraper",
+  "main": "scrape.js",
+  "dependencies": {
+    "playwright": "^1.44.0"
+  }
+}
