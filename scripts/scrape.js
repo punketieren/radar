@@ -16,10 +16,23 @@ const PLAYLIST_URL = 'https://open.spotify.com/playlist/37i9dQZEVXbvlGjddLmO0N';
   // Login
   console.log('Logging in...');
   await page.goto('https://accounts.spotify.com/login', { waitUntil: 'networkidle' });
-  await page.fill('#login-username', process.env.SPOTIFY_USERNAME);
-  await page.fill('#login-password', process.env.SPOTIFY_PASSWORD);
-  await page.click('#login-button');
-  await page.waitForNavigation({ waitUntil: 'networkidle' });
+  await page.screenshot({ path: 'debug-login.png' });
+
+  // Try multiple possible selectors for username
+  const usernameSelector = await page.locator('input[data-testid="login-username"], #login-username, input[name="username"], input[type="email"]').first();
+  await usernameSelector.fill(process.env.SPOTIFY_USERNAME);
+
+  const passwordSelector = await page.locator('input[data-testid="login-password"], #login-password, input[name="password"], input[type="password"]').first();
+  await passwordSelector.fill(process.env.SPOTIFY_PASSWORD);
+
+  await page.screenshot({ path: 'debug-filled.png' });
+
+  const loginBtn = await page.locator('button[data-testid="login-button"], #login-button, button[type="submit"]').first();
+  await loginBtn.click();
+
+  await page.waitForURL(url => !url.includes('accounts.spotify.com/login'), { timeout: 15000 });
+  await page.screenshot({ path: 'debug-after-login.png' });
+  console.log('Logged in, current URL:', page.url());
 
   // Open playlist
   console.log('Opening playlist...');

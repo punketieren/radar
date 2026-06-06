@@ -2,12 +2,14 @@ name: Update Release Radar
 
 on:
   schedule:
-    - cron: '0 10 * * 5'  # каждую пятницу в 10:00 UTC (Spotify обновляет Release Radar по пятницам)
-  workflow_dispatch:        # и вручную по кнопке
+    - cron: '0 10 * * 5'
+  workflow_dispatch:
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout repo
@@ -29,6 +31,13 @@ jobs:
           SPOTIFY_USERNAME: ${{ secrets.SPOTIFY_USERNAME }}
           SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
         run: node scripts/scrape.js
+
+      - name: Upload debug screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: debug-*.png
 
       - name: Commit and push index.html
         run: |
