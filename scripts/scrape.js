@@ -13,13 +13,11 @@ const PLAYLIST_URL = 'https://open.spotify.com/playlist/37i9dQZEVXbvlGjddLmO0N';
 
   const page = await context.newPage();
 
-  // Open playlist (no login needed)
   console.log('Opening playlist...');
   await page.goto(PLAYLIST_URL, { waitUntil: 'networkidle' });
   await page.waitForTimeout(3000);
   await page.screenshot({ path: 'debug-playlist.png' });
 
-  // Scroll to load all tracks
   console.log('Scrolling to load tracks...');
   let prevHeight = 0;
   for (let i = 0; i < 20; i++) {
@@ -30,18 +28,19 @@ const PLAYLIST_URL = 'https://open.spotify.com/playlist/37i9dQZEVXbvlGjddLmO0N';
     prevHeight = height;
   }
 
-  // Scrape tracks
   console.log('Scraping tracks...');
   const tracks = await page.evaluate(() => {
     const rows = document.querySelectorAll('[data-testid="tracklist-row"]');
     return Array.from(rows).map((row, index) => {
       const titleEl = row.querySelector('[data-testid="internal-track-link"] div');
       const artistEls = row.querySelectorAll('a[href*="/artist/"]');
+      const albumEl = row.querySelector('a[href*="/album/"]');
       const title = titleEl ? titleEl.innerText.trim() : '';
       const artists = Array.from(artistEls).map(a => a.innerText.trim()).filter(Boolean);
+      const album = albumEl ? albumEl.innerText.trim() : '';
       const linkEl = row.querySelector('a[href*="/track/"]');
       const link = linkEl ? linkEl.href : '';
-      return { index: index + 1, title, artists, link };
+      return { index: index + 1, title, artists, album, link };
     }).filter(t => t.title);
   });
 
@@ -52,6 +51,11 @@ const PLAYLIST_URL = 'https://open.spotify.com/playlist/37i9dQZEVXbvlGjddLmO0N';
 
   await browser.close();
 
+  if (tracks.length === 0) {
+    console.error('No tracks found! Check debug-playlist.png');
+    process.exit(1);
+  }
+
   const html = generateHTML(tracks, dateStr);
   fs.writeFileSync(path.join(__dirname, '..', 'index.html'), html, 'utf8');
   console.log('index.html written.');
@@ -61,12 +65,14 @@ function generateHTML(tracks, date) {
   const items = tracks.map(t => {
     const artistStr = t.artists.join(', ');
     const href = t.link || '#';
+    const albumLine = t.album ? `<span class="album">${t.album}</span>` : '';
     return `
     <li class="track">
       <span class="num">${String(t.index).padStart(2, '0')}</span>
       <div class="info">
         <a class="title" href="${href}" target="_blank" rel="noopener">${t.title}</a>
         <span class="artist">${artistStr}</span>
+        ${albumLine}
       </div>
     </li>`;
   }).join('\n');
@@ -217,7 +223,6 @@ function generateHTML(tracks, date) {
       font-weight: 300;
       color: var(--text);
       text-decoration: none;
-      letter-spacing: -0.01em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -228,7 +233,16 @@ function generateHTML(tracks, date) {
     .artist {
       font-size: 0.65rem;
       color: var(--muted);
-      letter-spacing: 0.05em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .album {
+      font-size: 0.6rem;
+      color: var(--muted);
+      opacity: 0.6;
+      font-style: italic;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -259,7 +273,7 @@ function generateHTML(tracks, date) {
     </ul>
   </main>
   <footer>
-    <a href="${PLAYLIST_URL}" target="_blank">Открыть в Spotify</a>
+    <a href="https://open.spotify.com/playlist/37i9dQZEVXbvlGjddLmO0N" target="_blank">Открыть в Spotify</a>
   </footer>
 </body>
 </html>`;
