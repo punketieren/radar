@@ -144,6 +144,20 @@
 
     a.title:hover { color: var(--accent); }
 
+    a.ttitle {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(0.8rem, 2vw, 1rem);
+      font-weight: 300;
+      color: var(--like);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    a.ttitle:hover { color: var(--accent); }
+
     .artist {
       font-size: 0.65rem;
       color: var(--muted);
