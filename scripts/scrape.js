@@ -13,31 +13,11 @@ const PLAYLIST_URL = 'https://open.spotify.com/playlist/37i9dQZEVXbvlGjddLmO0N';
 
   const page = await context.newPage();
 
-  // Login
-  console.log('Logging in...');
-  await page.goto('https://accounts.spotify.com/login', { waitUntil: 'networkidle' });
-  await page.screenshot({ path: 'debug-login.png' });
-
-  // Try multiple possible selectors for username
-  const usernameSelector = await page.locator('input[data-testid="login-username"], #login-username, input[name="username"], input[type="email"]').first();
-  await usernameSelector.fill(process.env.SPOTIFY_USERNAME);
-
-  const passwordSelector = await page.locator('input[data-testid="login-password"], #login-password, input[name="password"], input[type="password"]').first();
-  await passwordSelector.fill(process.env.SPOTIFY_PASSWORD);
-
-  await page.screenshot({ path: 'debug-filled.png' });
-
-  const loginBtn = await page.locator('button[data-testid="login-button"], #login-button, button[type="submit"]').first();
-  await loginBtn.click();
-
-  await page.waitForURL(url => !url.includes('accounts.spotify.com/login'), { timeout: 15000 });
-  await page.screenshot({ path: 'debug-after-login.png' });
-  console.log('Logged in, current URL:', page.url());
-
-  // Open playlist
+  // Open playlist (no login needed)
   console.log('Opening playlist...');
   await page.goto(PLAYLIST_URL, { waitUntil: 'networkidle' });
   await page.waitForTimeout(3000);
+  await page.screenshot({ path: 'debug-playlist.png' });
 
   // Scroll to load all tracks
   console.log('Scrolling to load tracks...');
@@ -67,20 +47,17 @@ const PLAYLIST_URL = 'https://open.spotify.com/playlist/37i9dQZEVXbvlGjddLmO0N';
 
   console.log(`Found ${tracks.length} tracks`);
 
-  // Get playlist title and description
-  const playlistTitle = await page.$eval('[data-testid="playlist-tracklist"] h1, h1', el => el.innerText).catch(() => 'Радар новинок');
   const now = new Date();
   const dateStr = now.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 
   await browser.close();
 
-  // Generate HTML
-  const html = generateHTML(tracks, playlistTitle, dateStr);
+  const html = generateHTML(tracks, dateStr);
   fs.writeFileSync(path.join(__dirname, '..', 'index.html'), html, 'utf8');
   console.log('index.html written.');
 })();
 
-function generateHTML(tracks, title, date) {
+function generateHTML(tracks, date) {
   const items = tracks.map(t => {
     const artistStr = t.artists.join(', ');
     const href = t.link || '#';
@@ -109,7 +86,6 @@ function generateHTML(tracks, title, date) {
       --bg: #0a0a0a;
       --surface: #111;
       --accent: #1ed760;
-      --accent2: #ff6b35;
       --text: #e8e8e8;
       --muted: #555;
       --border: #1e1e1e;
@@ -120,11 +96,9 @@ function generateHTML(tracks, title, date) {
       color: var(--text);
       font-family: 'Martian Mono', monospace;
       min-height: 100vh;
-      padding: 0;
       overflow-x: hidden;
     }
 
-    /* Grain overlay */
     body::before {
       content: '';
       position: fixed;
@@ -159,7 +133,6 @@ function generateHTML(tracks, title, date) {
     }
 
     .label {
-      font-family: 'Martian Mono', monospace;
       font-size: 0.65rem;
       font-weight: 300;
       letter-spacing: 0.25em;
@@ -199,9 +172,7 @@ function generateHTML(tracks, title, date) {
       margin-bottom: 1.5rem;
     }
 
-    ul.tracklist {
-      list-style: none;
-    }
+    ul.tracklist { list-style: none; }
 
     .track {
       display: flex;
@@ -231,8 +202,6 @@ function generateHTML(tracks, title, date) {
       min-width: 2rem;
       flex-shrink: 0;
       font-weight: 300;
-      letter-spacing: 0.05em;
-      padding-top: 2px;
     }
 
     .info {
@@ -254,9 +223,7 @@ function generateHTML(tracks, title, date) {
       text-overflow: ellipsis;
     }
 
-    a.title:hover {
-      color: var(--accent);
-    }
+    a.title:hover { color: var(--accent); }
 
     .artist {
       font-size: 0.65rem;
@@ -276,10 +243,7 @@ function generateHTML(tracks, title, date) {
       text-transform: uppercase;
     }
 
-    footer a {
-      color: var(--accent);
-      text-decoration: none;
-    }
+    footer a { color: var(--accent); text-decoration: none; }
   </style>
 </head>
 <body>
@@ -295,7 +259,7 @@ function generateHTML(tracks, title, date) {
     </ul>
   </main>
   <footer>
-    <a href="https://open.spotify.com/playlist/37i9dQZEVXbvlGjddLmO0N" target="_blank">Открыть в Spotify</a>
+    <a href="${PLAYLIST_URL}" target="_blank">Открыть в Spotify</a>
   </footer>
 </body>
 </html>`;
